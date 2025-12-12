@@ -1,0 +1,170 @@
+/* ==== Global Style ==== */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f4f8ff;
+  color: #222;
+}
+
+header {
+  background: #003c8f;
+  padding: 20px;
+  color: white;
+  text-align: center;
+}
+
+nav {
+  background: #002a61;
+  padding: 12px;
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+nav a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+nav a:hover {
+  color: #84c2ff;
+}
+
+.container {
+  width: 90%;
+  margin: auto;
+  padding: 20px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+footer {
+  background: #002a61;
+  color: white;
+  padding: 20px;
+  text-align: center;
+  margin-top: 40px;
+}
+
+/* ==== Login Page ==== */
+.login-box {
+  width: 300px;
+  margin: 100px auto;
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,150,0.2);
+}
+
+.login-box input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.login-box button {
+  width: 100%;
+  padding: 10px;
+  background: #003c8f;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.login-box button:hover {
+  background: #0055c9;
+}
+
+/* ==== Chemical Cards ==== */
+.chem-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 20px;
+}
+
+.chem-item {
+  padding: 15px;
+  border: 1px solid #cbd7f1;
+  border-radius: 8px;
+}
+
+.chem-item img {
+  width: 90px;
+  display: block;
+  margin: auto;
+}
+
+/* Search Bar */
+.search-box input {
+  width: 50%;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #aaa;
+}
+
+/* ===== Animations ===== */
+.fade-in {
+  animation: fadeIn 0.7s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hover card animation */
+.chem-item {
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.chem-item:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Smooth page transitions */
+body {
+  animation: fadeIn .5s ease-out;
+}
+
+/* === Dark Mode === */
+.dark-mode {
+  background: #0b0f19;
+  color: #e6e6e6;
+}
+
+.dark-mode header,
+.dark-mode nav,
+.dark-mode footer {
+  background: #111a2b;
+}
+
+.dark-mode .card {
+  background: #1a2333;
+  color: #fff;
+  border: 1px solid #2e3b55;
+}
+
+.dark-mode nav a:hover {
+  color: #90c0ff;
+}
+
+.dark-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #003c8f;
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
