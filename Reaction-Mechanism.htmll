@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chemtech | Reaction Mechanisms Database</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --color-primary: #2C3E50;
+            --color-secondary: #16A085;
+            --color-accent: #E67E22;
+            --color-bg: #F8F9FA;
+            --color-white: #FFFFFF;
+        }
+
+        body {
+            background-color: var(--color-bg);
+            font-family: 'Inter', sans-serif;
+            color: #334155;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes modalEnter {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .animate-card {
+            animation: fadeInUp 0.5s ease-out forwards;
+            opacity: 0; /* Start hidden */
+        }
+
+        .animate-modal {
+            animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Card Styles */
+        .reaction-card {
+            background: var(--color-white);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid rgba(0,0,0,0.05);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .reaction-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--color-secondary), var(--color-primary));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .reaction-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(44, 62, 80, 0.15);
+        }
+
+        .reaction-card:hover::after {
+            transform: scaleX(1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Utility Classes for Custom Colors */
+        .text-primary { color: var(--color-primary); }
+        .bg-primary { background-color: var(--color-primary); }
+        
+        .text-secondary { color: var(--color-secondary); }
+        .bg-secondary { background-color: var(--color-secondary); }
+        
+        .text-accent { color: var(--color-accent); }
+        .bg-accent { background-color: var(--color-accent); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- Data Source (Full 100 Reactions) ---
+        const reactionsData = [
+            // --- Organic Reactions ---
+            { id: 1, category: "Organic", name: "SN1 Nucleophilic Substitution", equation: "R-X → R-Nu + X⁻", mechanism: "(1) Ionization to form carbocation, (2) Nucleophile attack", conditions: "Polar protic solvents, tertiary substrates preferred", catalyst: "Lewis acids (optional)", energy: "Two-step process with carbocation intermediate at local energy maximum", applications: "Synthesis of alcohols, ethers, substituted compounds", features: "Racemization at chiral centers, rate depends on substrate only" },
+            { id: 2, category: "Organic", name: "SN2 Nucleophilic Substitution", equation: "Nu⁻ + R-X → R-Nu + X⁻", mechanism: "Single concerted step with backside attack", conditions: "Polar aprotic solvents, primary substrates preferred", catalyst: "None", energy: "Single transition state with no intermediate", applications: "Williamson ether synthesis, alkylation reactions", features: "Inversion of configuration (Walden), bimolecular rate law" },
+            { id: 3, category: "Organic", name: "E1 Elimination", equation: "R-CH₂-CH₂-X → R-CH=CH₂ + HX", mechanism: "(1) Ionization to carbocation, (2) Proton abstraction", conditions: "Heat, polar protic solvents, tertiary substrates", catalyst: "Strong bases or heat", energy: "Two-step with carbocation intermediate", applications: "Alkene synthesis, dehydration of alcohols", features: "Follows Zaitsev's rule, competes with SN1" },
+            { id: 4, category: "Organic", name: "E2 Elimination", equation: "Base + R-CH₂-CH₂-X → R-CH=CH₂ + Base-H + X⁻", mechanism: "Concerted removal of proton and leaving group", conditions: "Strong base, antiperiplanar geometry required", catalyst: "Strong bases (NaOH, KOtBu)", energy: "Single transition state", applications: "Alkene synthesis, dehydrohalogenation", features: "Stereospecific, requires antiperiplanar arrangement" },
+            { id: 5, category: "Organic", name: "Electrophilic Aromatic Substitution", equation: "Ar-H + E⁺ → Ar-E + H⁺", mechanism: "(1) Electrophile generation, (2) Attack on ring, (3) Deprotonation", conditions: "Controlled temp, Lewis acid", catalyst: "AlCl₃, FeBr₃, H₂SO₄", energy: "Arenium ion intermediate (sigma complex)", applications: "Halogenation, nitration, sulfonation", features: "Substituent effects direct incoming electrophile" },
+            { id: 6, category: "Organic", name: "Friedel-Crafts Alkylation", equation: "Ar-H + R-X + AlCl₃ → Ar-R + HX", mechanism: "(1) Carbocation formation, (2) Electrophilic attack, (3) Deprotonation", conditions: "Anhydrous, excess AlCl₃", catalyst: "AlCl₃, FeCl₃", energy: "Carbocation intermediate formation", applications: "Alkyl groups onto aromatic rings", features: "Carbocation rearrangements possible, polyalkylation risk" },
+            { id: 7, category: "Organic", name: "Friedel-Crafts Acylation", equation: "Ar-H + RCOCl + AlCl₃ → Ar-COR + HCl", mechanism: "(1) Acylium ion formation, (2) Attack, (3) Deprotonation", conditions: "Anhydrous, stoichiometric AlCl₃", catalyst: "AlCl₃ (stoichiometric)", energy: "Acylium ion intermediate", applications: "Ketone synthesis, pharmaceutical intermediates", features: "No rearrangements, prevents polyacylation" },
+            { id: 8, category: "Organic", name: "Diels-Alder Reaction", equation: "Diene + Dienophile → Cyclohexene derivative", mechanism: "Concerted [4+2] cycloaddition", conditions: "Heat or RT, electron-rich diene + electron-poor dienophile", catalyst: "Lewis acids (optional)", energy: "Single concerted transition state", applications: "Six-membered ring synthesis, natural products", features: "Stereospecific, follows endo rule, pericyclic" },
+            { id: 9, category: "Organic", name: "Aldol Condensation", equation: "2 R-CHO → R-CH=C(R)-CHO + H₂O", mechanism: "(1) Enolate formation, (2) Nucleophilic addition, (3) Dehydration", conditions: "Base/Acid catalyst, heat for dehydration", catalyst: "NaOH, KOH, or acids", energy: "Enolate intermediate", applications: "C-C bond formation, α,β-unsaturated carbonyls", features: "Reversible, crossed aldol possible" },
+            { id: 10, category: "Organic", name: "Claisen Condensation", equation: "2 R-COOR' → R-CO-CH(R)-COOR' + R'OH", mechanism: "(1) Enolate formation, (2) Nucleophilic acyl substitution", conditions: "Strong base, ester with α-hydrogens", catalyst: "NaOEt, LDA", energy: "Enolate and tetrahedral intermediates", applications: "β-keto ester synthesis", features: "Requires strong base, product stabilized" },
+            { id: 11, category: "Organic", name: "Michael Addition", equation: "Nu⁻ + R-CH=CH-CO-R' → R-CH(Nu)-CH₂-CO-R'", mechanism: "(1) Nucleophile addition to β-carbon, (2) Protonation", conditions: "Base catalyst, α,β-unsaturated carbonyl", catalyst: "Base catalysts, organocatalysts", energy: "Enolate intermediate", applications: "C-C / C-heteroatom bond formation", features: "1,4-addition to conjugated systems" },
+            { id: 12, category: "Organic", name: "Grignard Reaction", equation: "R-MgX + R'-C=O → R-R'-C-OH", mechanism: "(1) Nucleophilic addition to carbonyl, (2) Aqueous workup", conditions: "Anhydrous ether solvents, inert atmosphere", catalyst: "None", energy: "Exothermic addition", applications: "Alcohol synthesis, C-C bond formation", features: "Highly reactive, moisture-sensitive" },
+            { id: 13, category: "Organic", name: "Wittig Reaction", equation: "R₂C=O + Ph₃P=CR₂ → R₂C=CR₂ + Ph₃P=O", mechanism: "(1) Ylide formation, (2) [2+2] cycloaddition, (3) Decomposition", conditions: "Strong base for ylide, RT", catalyst: "None", energy: "Oxaphosphetane intermediate", applications: "Alkene synthesis with precise location", features: "Stereoselective, tolerates functional groups" },
+            { id: 14, category: "Organic", name: "Hofmann Elimination", equation: "R₄N⁺OH⁻ + Heat → Alkene + R₃N + H₂O", mechanism: "(1) Quaternary ammonium formation, (2) E2 elimination", conditions: "Heat, aqueous base", catalyst: "None", energy: "Transition state favors less substituted alkene", applications: "Alkene synthesis from amines", features: "Anti-Zaitsev selectivity" },
+            { id: 15, category: "Organic", name: "Cannizzaro Reaction", equation: "2 Ar-CHO + NaOH → Ar-CH₂OH + Ar-COO⁻", mechanism: "(1) Hydride transfer, (2) Proton transfer", conditions: "Strong base, aldehydes w/o α-hydrogens", catalyst: "NaOH, KOH", energy: "Hydride transfer transition state", applications: "Disproportionation to alcohol/acid", features: "Intramolecular hydride transfer" },
+            { id: 16, category: "Organic", name: "Pinacol Rearrangement", equation: "R₂C(OH)-C(OH)R₂ → R₂C=O-CR₃", mechanism: "(1) Protonation, (2) 1,2-alkyl shift, (3) Deprotonation", conditions: "Acid catalyst, heat", catalyst: "H₂SO₄, HCl", energy: "Carbocation rearrangement", applications: "Ketone synthesis from vicinal diols", features: "Migratory aptitude determines product" },
+            { id: 17, category: "Organic", name: "Beckmann Rearrangement", equation: "R₂C=N-OH → R-CO-NH-R", mechanism: "(1) Oxime activation, (2) Migration with leaving group loss", conditions: "Strong acid/activating agent", catalyst: "H₂SO₄, PCl₅, TsCl", energy: "Nitrilium ion intermediate", applications: "Amide and lactam synthesis (Nylon-6)", features: "Anti group migrates stereospecifically" },
+            { id: 18, category: "Organic", name: "Wolff-Kishner Reduction", equation: "R₂C=O + N₂H₄ → R₂CH₂ + N₂", mechanism: "(1) Hydrazone formation, (2) Base elimination, (3) N₂ loss", conditions: "Strong base, high temp", catalyst: "KOH, ethylene glycol", energy: "Anionic intermediates", applications: "Carbonyl to methylene reduction", features: "Basic conditions, complementary to Clemmensen" },
+            { id: 19, category: "Organic", name: "Clemmensen Reduction", equation: "R₂C=O + Zn(Hg) + HCl → R₂CH₂", mechanism: "Radical/carbenoid on zinc surface", conditions: "Amalgamated zinc, conc. HCl, heat", catalyst: "Zn(Hg)", energy: "Surface reaction profile", applications: "Carbonyl reduction (acidic)", features: "Acidic conditions, complementary to Wolff-Kishner" },
+            { id: 20, category: "Organic", name: "Birch Reduction", equation: "Ar-H + Na/NH₃ → 1,4-cyclohexadiene", mechanism: "Electron transfers and protonations", conditions: "Liquid NH₃, Na/Li metal, alcohol", catalyst: "Alkali metals (reagent)", energy: "Radical anion intermediates", applications: "Partial aromatic reduction", features: "1,4-addition, EDG direct reduction" },
+            { id: 21, category: "Organic", name: "Baeyer-Villiger Oxidation", equation: "R-CO-R' + R''CO₃H → Ester/Lactone", mechanism: "(1) Peracid addition, (2) Criegee intermediate, (3) Migration", conditions: "Peracid oxidant, mild", catalyst: "m-CPBA", energy: "Criegee intermediate", applications: "Ester/Lactone synthesis from ketones", features: "Predictable migratory aptitude" },
+            { id: 22, category: "Organic", name: "Swern Oxidation", equation: "R-CH₂OH + (COCl)₂ → R-CHO", mechanism: "(1) DMSO activation, (2) Alcohol addition, (3) Elimination", conditions: "-78°C, anhydrous", catalyst: "Oxalyl chloride, DMSO", energy: "Alkoxysulfonium ylide intermediate", applications: "Mild alcohol oxidation", features: "No overoxidation, tolerates sensitive groups" },
+            { id: 23, category: "Organic", name: "Jones Oxidation", equation: "R-CH₂OH + CrO₃/H₂SO₄ → R-COOH", mechanism: "Chromate ester formation, E2-like elimination", conditions: "Aqueous acidic, RT", catalyst: "CrO₃ in H₂SO₄", energy: "Chromate ester intermediate", applications: "Primary alcohol to carboxylic acid", features: "Strong oxidant, overoxidizes primary alcohols" },
+            { id: 24, category: "Organic", name: "Oppenauer Oxidation", equation: "Alcohol + Ketone + Al(OiPr)₃ ⇌ Ketone + Alcohol", mechanism: "Hydride transfer via Al-alkoxide", conditions: "Ketone hydride acceptor", catalyst: "Al(OiPr)₃", energy: "Cyclic transition state", applications: "Selective secondary alcohol oxidation", features: "Reverse of MPV reduction, mild" },
+            { id: 25, category: "Organic", name: "Meerwein-Ponndorf-Verley", equation: "Ketone + Alcohol + Al(OiPr)₃ ⇌ Alcohol + Ketone", mechanism: "Hydride transfer via Al-alkoxide", conditions: "Alcohol hydride donor", catalyst: "Al(OiPr)₃", energy: "Cyclic transition state", applications: "Selective carbonyl reduction", features: "Chemoselective, mild" },
+            { id: 26, category: "Organic", name: "Hydroboration-Oxidation", equation: "Alkene + BH₃ → Alcohol", mechanism: "(1) Syn addition BH₃, (2) Oxidative workup", conditions: "THF, then H₂O₂/NaOH", catalyst: "BH₃·THF", energy: "Concerted syn addition", applications: "Anti-Markovnikov alcohol synthesis", features: "Syn addition, high regioselectivity" },
+            { id: 27, category: "Organic", name: "Ozonolysis", equation: "Alkene + O₃ → Carbonyls", mechanism: "Cycloaddition to molozonide -> ozonide -> cleavage", conditions: "Low temp, ozone, reductive/oxidative workup", catalyst: "O₃", energy: "Molozonide/Ozonide intermediates", applications: "Cleavage of C=C bonds", features: "Workup determines oxidation state" },
+            { id: 28, category: "Organic", name: "Epoxidation", equation: "Alkene + RCO₃H → Epoxide", mechanism: "Concerted oxygen transfer", conditions: "Peracid, mild", catalyst: "m-CPBA", energy: "Butterfly transition state", applications: "Epoxide synthesis", features: "Stereospecific syn addition" },
+            { id: 29, category: "Organic", name: "Sharpless Epoxidation", equation: "Allylic Alcohol + tBuOOH → Chiral Epoxide", mechanism: "Ti-tartrate complex enantioselective transfer", conditions: "Ti catalyst, DET, tBuOOH", catalyst: "Ti(OiPr)₄ / DET", energy: "Chiral dimeric complex", applications: "Enantioselective epoxidation", features: "High ee (>90%), predictable stereochem" },
+            { id: 30, category: "Organic", name: "Simmons-Smith Reaction", equation: "Alkene + CH₂I₂ + Zn(Cu) → Cyclopropane", mechanism: "Carbenoid addition", conditions: "Zn-Cu couple, diiodomethane", catalyst: "Zn(Cu)", energy: "Butterfly-type transition state", applications: "Cyclopropanation", features: "Syn addition, stereospecific" },
+            { id: 31, category: "Organic", name: "Heck Reaction", equation: "R-X + Alkene + Pd(0) → Substituted Alkene", mechanism: "Oxidative addition, insertion, elimination", conditions: "Pd catalyst, base, heat", catalyst: "Pd(PPh₃)₄", energy: "Pd(0)/Pd(II) cycle", applications: "C-C bond formation", features: "Forms trans alkenes, functional group tolerance" },
+            { id: 32, category: "Organic", name: "Suzuki Coupling", equation: "R-X + R'-B(OH)₂ + Pd(0) → R-R'", mechanism: "Oxidative addition, transmetalation, reductive elimination", conditions: "Pd catalyst, base, aq/org solvent", catalyst: "Pd(PPh₃)₄", energy: "Catalytic cycle", applications: "Biaryl synthesis", features: "Mild, stable boronic acids" },
+            { id: 33, category: "Organic", name: "Stille Coupling", equation: "R-X + R'-SnBu₃ + Pd(0) → R-R'", mechanism: "Oxidative addition, transmetalation, reductive elimination", conditions: "Pd catalyst, mild heat", catalyst: "Pd(PPh₃)₄", energy: "Catalytic cycle", applications: "Complex molecule synthesis", features: "Toxic tin reagents, broad scope" },
+            { id: 34, category: "Organic", name: "Negishi Coupling", equation: "R-X + R'-ZnX + Pd(0) → R-R'", mechanism: "Oxidative addition, transmetalation, reductive elimination", conditions: "Pd/Ni catalyst, THF", catalyst: "Pd(PPh₃)₄ / Ni", energy: "Catalytic cycle", applications: "C-C bond formation", features: "High reactivity, organozinc less stable" },
+            { id: 35, category: "Organic", name: "Sonogashira Coupling", equation: "R-X + Alkyne + Pd/Cu → Aryl Alkyne", mechanism: "Dual cycle: Pd oxidative addition + Cu transmetalation", conditions: "Pd/Cu, base, amine solvent", catalyst: "Pd(PPh₃)₂Cl₂, CuI", energy: "Dual catalytic cycle", applications: "Aryl/Vinyl alkyne synthesis", features: "Mild, requires Cu co-catalyst" },
+            { id: 36, category: "Organic", name: "Buchwald-Hartwig Amination", equation: "R-X + Amine + Pd(0) → Aryl Amine", mechanism: "Oxidative addition, amine coordination, elimination", conditions: "Pd w/ bulky ligands, strong base", catalyst: "Pd₂(dba)₃ / BINAP", energy: "Catalytic cycle", applications: "C-N bond formation", features: "Specialized ligands required" },
+            { id: 37, category: "Organic", name: "Mitsunobu Reaction", equation: "R-OH + Nu-H → R-Nu (inverted)", mechanism: "Betaine formation, alcohol activation, SN2", conditions: "DEAD/DIAD, PPh₃, RT", catalyst: "PPh₃ / DEAD", energy: "Phosphonium intermediate", applications: "Substitution with inversion (ester/ether)", features: "Walden inversion, mild" },
+            { id: 38, category: "Organic", name: "Williamson Ether Synthesis", equation: "R-O⁻ + R'-X → R-O-R'", mechanism: "SN2 displacement", conditions: "Strong base, primary halide", catalyst: "NaH (reagent)", energy: "SN2 transition state", applications: "Ether synthesis", features: "Best with primary halides" },
+            { id: 39, category: "Organic", name: "Fischer Esterification", equation: "R-COOH + R'-OH ⇌ R-COO-R' + H₂O", mechanism: "Protonation, attack, water elimination", conditions: "Acid catalyst, heat, water removal", catalyst: "H₂SO₄, HCl", energy: "Tetrahedral intermediate", applications: "Ester synthesis", features: "Equilibrium driven by water removal" },
+            { id: 40, category: "Organic", name: "Kolbe Electrolysis", equation: "2 R-COO⁻ → R-R + 2 CO₂", mechanism: "Anodic oxidation, decarboxylation, radical coupling", conditions: "Electrolysis, Pt electrodes", catalyst: "Electricity", energy: "Radical intermediates", applications: "Symmetrical alkane synthesis", features: "Electrochemical method" },
+
+            // --- Inorganic Reactions ---
+            { id: 41, category: "Inorganic", name: "Haber-Bosch Process", equation: "N₂ + 3 H₂ ⇌ 2 NH₃", mechanism: "Adsorption, dissociation, stepwise hydrogenation", conditions: "400-500°C, 150-250 atm", catalyst: "Iron with promoters", energy: "High activation energy barrier for N₂ cleavage", applications: "Ammonia / Fertilizer production", features: "Equilibrium limited, exothermic" },
+            { id: 42, category: "Inorganic", name: "Contact Process", equation: "2 SO₂ + O₂ ⇌ 2 SO₃ → H₂SO₄", mechanism: "Oxidation on V₂O₅ surface", conditions: "450°C, 1-2 atm", catalyst: "V₂O₅", energy: "Surface oxidation mechanism", applications: "Sulfuric acid production", features: "Exothermic, multiple beds" },
+            { id: 43, category: "Inorganic", name: "Ostwald Process", equation: "NH₃ → NO → NO₂ → HNO₃", mechanism: "Catalytic ammonia oxidation, hydration", conditions: "850-950°C (step 1)", catalyst: "Pt-Rh gauze", energy: "Rapid oxidation", applications: "Nitric acid production", features: "Three-stage industrial process" },
+            { id: 44, category: "Inorganic", name: "Chloralkali Process", equation: "2 NaCl + 2 H₂O → 2 NaOH + Cl₂ + H₂", mechanism: "Electrolysis with membrane separation", conditions: "Electrolytic cell", catalyst: "Electricity", energy: "Electrochemical potential driven", applications: "Cl₂, NaOH, H₂ production", features: "Membrane prevents back-reaction" },
+            { id: 45, category: "Inorganic", name: "Thermite Reaction", equation: "Fe₂O₃ + 2 Al → 2 Fe + Al₂O₃", mechanism: "Exothermic redox reduction", conditions: "Ignition temp >2500°C", catalyst: "None", energy: "Extremely exothermic", applications: "Welding, purification", features: "Produces molten iron" },
+            { id: 46, category: "Inorganic", name: "Water-Gas Shift", equation: "CO + H₂O ⇌ CO₂ + H₂", mechanism: "Surface adsorption and oxygen transfer", conditions: "200-450°C", catalyst: "Fe₃O₄/Cr₂O₃ or Cu/ZnO", energy: "Surface mechanism", applications: "Hydrogen production", features: "Reversible, temp dependent" },
+            { id: 47, category: "Inorganic", name: "Claus Process", equation: "2 H₂S + SO₂ → 3 S + 2 H₂O", mechanism: "Partial combustion then catalytic comproportionation", conditions: "200-350°C", catalyst: "Al₂O₃, TiO₂", energy: "Exothermic", applications: "Sulfur recovery", features: ">95% recovery efficiency" },
+            { id: 48, category: "Inorganic", name: "Deacon Process", equation: "4 HCl + O₂ → 2 Cl₂ + 2 H₂O", mechanism: "Catalytic oxidation of HCl", conditions: "400-450°C", catalyst: "CuCl₂", energy: "Redox cycle of copper", applications: "Chlorine from HCl", features: "Largely replaced by Chloralkali" },
+            { id: 49, category: "Inorganic", name: "Mond Process", equation: "Ni + 4 CO ⇌ Ni(CO)₄", mechanism: "Carbonyl formation and decomposition", conditions: "50-60°C form, 200°C decomp", catalyst: "None", energy: "Entropy driven at high temp", applications: "Nickel purification", features: "High purity product" },
+            { id: 50, category: "Inorganic", name: "Hall-Héroult Process", equation: "2 Al₂O₃ + 3 C → 4 Al + 3 CO₂", mechanism: "Electrolytic reduction in cryolite", conditions: "950°C, molten salt", catalyst: "Cryolite (solvent)", energy: "High electrical consumption", applications: "Aluminum production", features: "Consumes carbon anodes" },
+            { id: 51, category: "Inorganic", name: "Birkeland-Eyde Process", equation: "N₂ + O₂ → 2 NO", mechanism: "Thermal fixation in arc", conditions: "Electric arc >3000°C", catalyst: "None", energy: "Massive energy input", applications: "Historical N-fixation", features: "Obsolete" },
+            { id: 52, category: "Inorganic", name: "Solvay Process", equation: "NaCl + CaCO₃ → Na₂CO₃ + CaCl₂", mechanism: "Ammonia-soda cycle", conditions: "Multiple stages", catalyst: "Ammonia (recycled)", energy: "Thermal decomposition steps", applications: "Soda ash production", features: "Efficient ammonia recycling" },
+            { id: 53, category: "Inorganic", name: "Leblanc Process", equation: "NaCl → Na₂SO₄ → Na₂S → Na₂CO₃", mechanism: "Reduction and carbonation", conditions: "High temp roasting", catalyst: "None", energy: "Dirty, inefficient", applications: "Historical Soda Ash", features: "Obsolete, pollution heavy" },
+            { id: 54, category: "Inorganic", name: "Goldschmidt Process", equation: "Cr₂O₃ + 2 Al → 2 Cr + Al₂O₃", mechanism: "Aluminothermic reduction", conditions: "Ignition required", catalyst: "None", energy: "Highly exothermic", applications: "Chromium production", features: "Metal extraction" },
+            { id: 55, category: "Inorganic", name: "Kroll Process", equation: "TiCl₄ + 2 Mg → Ti + 2 MgCl₂", mechanism: "Magnesium reduction of chloride", conditions: "800-900°C, inert atm", catalyst: "None", energy: "Exothermic", applications: "Titanium sponge production", features: "Batch process" },
+            { id: 56, category: "Inorganic", name: "Pidgeon Process", equation: "2 MgO + Si → 2 Mg + SiO₂", mechanism: "Silicothermic reduction", conditions: "1100°C, vacuum", catalyst: "None", energy: "Endothermic", applications: "Magnesium production", features: "Distillation of Mg vapor" },
+            { id: 57, category: "Inorganic", name: "Raschig Process", equation: "NH₃ + NaOCl → N₂H₄", mechanism: "Chloramine intermediate", conditions: "Controlled pH", catalyst: "Gelatin (inhibitor)", energy: "Stepwise substitution", applications: "Hydrazine production", features: "Side reactions common" },
+            { id: 58, category: "Inorganic", name: "Wacker Process", equation: "C₂H₄ + O₂ → CH₃CHO", mechanism: "Pd-alkene coordination, nucleophilic attack", conditions: "PdCl₂/CuCl₂, aq", catalyst: "PdCl₂/CuCl₂", energy: "Catalytic redox cycle", applications: "Acetaldehyde from ethylene", features: "Cu reoxidizes Pd" },
+            { id: 59, category: "Inorganic", name: "Ligand Substitution", equation: "[ML₆] + L' → [ML₅L'] + L", mechanism: "Associative (A) or Dissociative (D)", conditions: "Varies", catalyst: "None", energy: "Transition state geometry dependent", applications: "Coordination chem", features: "Depends on steric/electronics" },
+            { id: 60, category: "Inorganic", name: "Oxidative Addition", equation: "MLn + X-Y → MLn(X)(Y)", mechanism: "Concerted or stepwise addition", conditions: "Low ox state metal", catalyst: "None", energy: "Increases ox state by 2", applications: "Catalysis initiation", features: "Fundamental organometallic step" },
+            { id: 61, category: "Inorganic", name: "Reductive Elimination", equation: "MLn(X)(Y) → MLn + X-Y", mechanism: "Coupling of ligands", conditions: "High ox state metal", catalyst: "None", energy: "Decreases ox state by 2", applications: "Product release in catalysis", features: "Reverse of oxidative addition" },
+            { id: 62, category: "Inorganic", name: "Migratory Insertion", equation: "R-M-CO → M-COR", mechanism: "Alkyl migration to CO", conditions: "Unsaturated complex", catalyst: "None", energy: "Opens coordination site", applications: "Polymerization, Carbonylation", features: "Creates new C-C bond" },
+            { id: 63, category: "Inorganic", name: "Beta-Hydride Elimination", equation: "M-CH₂-CH₂-R → M-H + Alkene", mechanism: "Syn elimination", conditions: "Vacant site required", catalyst: "None", energy: "Agostic interaction", applications: "Alkene formation", features: "Chain termination step" },
+            { id: 64, category: "Inorganic", name: "Electron Transfer (Outer Sphere)", equation: "M(ox) + M'(red) → M(red) + M'(ox)", mechanism: "Tunneling without bridging", conditions: "Frank-Condon principle", catalyst: "None", energy: "Reorganization energy dependent", applications: "Redox reactions", features: "No bond breaking/making" },
+            { id: 65, category: "Inorganic", name: "Atom Transfer", equation: "MLn + X-Y → MLn(X) + Y•", mechanism: "Radical abstraction", conditions: "Varies", catalyst: "Metal complex", energy: "Radical pathway", applications: "ATRP Polymerization", features: "One electron change" },
+
+            // --- Biochemical Reactions ---
+            { id: 66, category: "Biochemical", name: "Glycolysis Pathway", equation: "Glucose → 2 Pyruvate + 2 ATP + 2 NADH", mechanism: "10-step enzymatic breakdown", conditions: "Cytoplasm, pH 7.4", catalyst: "Hexokinase, PFK, Pyruvate Kinase", energy: "Exergonic coupled reactions", applications: "Energy production", features: "Anaerobic, substrate-level phosphorylation" },
+            { id: 67, category: "Biochemical", name: "Citric Acid Cycle (Krebs)", equation: "Acetyl-CoA → 2 CO₂ + 3 NADH + FADH₂ + GTP", mechanism: "8-step cyclic oxidation", conditions: "Mitochondrial matrix", catalyst: "Citrate synthase, etc.", energy: "Amphibolic pathway", applications: "Central metabolism", features: "Aerobic integration of carbs/fats/proteins" },
+            { id: 68, category: "Biochemical", name: "Oxidative Phosphorylation", equation: "NADH + O₂ + ADP → ATP + H₂O", mechanism: "ETC proton pumping + ATP synthase", conditions: "Inner mitochondrial membrane", catalyst: "Complex I-IV, ATP Synthase", energy: "Proton motive force", applications: "Major ATP source", features: "Chemiosmotic coupling" },
+            { id: 69, category: "Biochemical", name: "Fatty Acid β-Oxidation", equation: "Acyl-CoA → Acetyl-CoA + NADH + FADH₂", mechanism: "Oxidation, Hydration, Oxidation, Thiolysis", conditions: "Mitochondria", catalyst: "Dehydrogenases, Thiolase", energy: "Spiral pathway", applications: "Fat catabolism", features: "Repeats until chain is consumed" },
+            { id: 70, category: "Biochemical", name: "Fatty Acid Synthesis", equation: "Acetyl-CoA + NADPH → Palmitate", mechanism: "Condensation, Reduction, Dehydration, Reduction", conditions: "Cytoplasm", catalyst: "Fatty Acid Synthase", energy: "Requires ATP/NADPH", applications: "Lipid storage", features: "Builds 2 carbons at a time" },
+            { id: 71, category: "Biochemical", name: "Gluconeogenesis", equation: "2 Pyruvate + ATP/GTP → Glucose", mechanism: "Reverse glycolysis with 3 bypass steps", conditions: "Liver/Kidney", catalyst: "PC, PEPCK, F1,6BPase, G6Pase", energy: "Energy expensive", applications: "Blood glucose maintenance", features: "Bypasses irreversible glycolysis steps" },
+            { id: 72, category: "Biochemical", name: "Pentose Phosphate Pathway", equation: "Glucose-6-P + NADP⁺ → NADPH + Ribose-5-P", mechanism: "Oxidative/Non-oxidative phases", conditions: "Cytoplasm", catalyst: "G6PD, 6-PGD, Transketolase", energy: "No ATP generated", applications: "NADPH and Ribose synthesis", features: "Essential for biosynthesis and nucleotides" },
+            { id: 73, category: "Biochemical", name: "Urea Cycle", equation: "NH₃ + CO₂ + Aspartate → Urea + Fumarate", mechanism: "5-step cycle involving carbamoyl phosphate", conditions: "Mitochondria & Cytoplasm (Liver)", catalyst: "CPS-I, OTC, Arginase", energy: "Consumes ATP", applications: "Nitrogen excretion", features: "Links to Krebs cycle via fumarate" },
+            { id: 74, category: "Biochemical", name: "Amino Acid Deamination", equation: "Amino Acid + H₂O → α-Keto Acid + NH₃", mechanism: "Oxidative deamination", conditions: "Mitochondria/Peroxisomes", catalyst: "Glutamate Dehydrogenase", energy: "Produces NADH", applications: "Catabolism of amino acids", features: "Reversible for glutamate" },
+            { id: 75, category: "Biochemical", name: "Transamination Reactions", equation: "AA₁ + α-KA₂ ⇌ α-KA₁ + AA₂", mechanism: "Ping-pong bi-bi mechanism via PLP", conditions: "Cytoplasm/Mitochondria", catalyst: "Transaminases (AST, ALT)", energy: "Near equilibrium", applications: "Amino acid interconversion", features: "Requires Vitamin B6 (PLP)" },
+            { id: 76, category: "Biochemical", name: "Photosynthesis Light Reactions", equation: "H₂O + Light + NADP⁺ + ADP → O₂ + NADPH + ATP", mechanism: "Z-scheme electron transport", conditions: "Thylakoid membranes", catalyst: "PSII, PSI, ATP Synthase", energy: "Light energy capture", applications: "Solar energy conversion", features: "Produces Oxygen as byproduct" },
+            { id: 77, category: "Biochemical", name: "Calvin Cycle", equation: "CO₂ + ATP + NADPH → G3P", mechanism: "Fixation, Reduction, Regeneration", conditions: "Chloroplast Stroma", catalyst: "RuBisCO", energy: "Consumes ATP/NADPH", applications: "Carbon fixation", features: "Light-independent phase" },
+            { id: 78, category: "Biochemical", name: "DNA Replication", equation: "DNA Template + dNTPs → 2 DNA Copies", mechanism: "Semi-conservative synthesis", conditions: "Nucleus (S-phase)", catalyst: "DNA Polymerase, Helicase", energy: "Driven by PPi hydrolysis", applications: "Genetic inheritance", features: "Leading/Lagging strands" },
+            { id: 79, category: "Biochemical", name: "Transcription", equation: "DNA + NTPs → RNA", mechanism: "Initiation, Elongation, Termination", conditions: "Nucleus", catalyst: "RNA Polymerase", energy: "Driven by PPi hydrolysis", applications: "Gene expression", features: "5' to 3' synthesis" },
+            { id: 80, category: "Biochemical", name: "Translation", equation: "mRNA + tRNA + AA → Protein", mechanism: "Initiation, Elongation, Termination", conditions: "Ribosome", catalyst: "Ribozyme (rRNA)", energy: "GTP hydrolysis", applications: "Protein synthesis", features: "Codon-Anticodon matching" },
+            { id: 81, category: "Biochemical", name: "Enzyme-Substrate Binding (Lock & Key)", equation: "E + S ⇌ ES → E + P", mechanism: "Rigid active site binding", conditions: "Physiological", catalyst: "Enzyme", energy: "Lowers activation energy", applications: "Specificity modeling", features: "Geometric complementarity" },
+            { id: 82, category: "Biochemical", name: "Induced Fit Mechanism", equation: "E + S ⇌ ES* → E + P", mechanism: "Conformational change upon binding", conditions: "Physiological", catalyst: "Enzyme", energy: "Binding energy usage", applications: "Modern enzyme kinetics", features: "Dynamic active site" },
+            { id: 83, category: "Biochemical", name: "Allosteric Regulation", equation: "E + Effector ⇌ E* (active/inactive)", mechanism: "Binding at non-active site", conditions: "Metabolic pathways", catalyst: "Allosteric Enzyme", energy: "Conformational shift", applications: "Feedback inhibition", features: "Sigmoidal kinetics" },
+            { id: 84, category: "Biochemical", name: "Phosphorylation Cascade", equation: "Kinase + ATP → Kinase-P + ADP", mechanism: "Sequential phosphorylation", conditions: "Cell signaling pathways", catalyst: "Kinases", energy: "ATP consumption", applications: "Signal amplification", features: "Reversible via phosphatases" },
+            { id: 85, category: "Biochemical", name: "Protein Folding", equation: "Unfolded → Native State", mechanism: "Hydrophobic collapse, secondary formation", conditions: "ER/Cytoplasm", catalyst: "Chaperones (Hsp70)", energy: "Thermodynamically driven", applications: "Functional protein formation", features: "Assisted by chaperonins" },
+
+            // --- Polymerization Reactions ---
+            { id: 86, category: "Polymerization", name: "Free Radical Polymerization", equation: "n Monomer → Polymer", mechanism: "Initiation, Propagation, Termination", conditions: "Heat/Light, Radical Initiator", catalyst: "AIBN, Benzoyl Peroxide", energy: "Exothermic", applications: "Polystyrene, PVC, LDPE", features: "Broad MW distribution" },
+            { id: 87, category: "Polymerization", name: "Cationic Polymerization", equation: "n Monomer → Polymer", mechanism: "Carbocation propagation", conditions: "Low temp, Acid catalyst", catalyst: "Lewis Acids (BF3, AlCl3)", energy: "Fast kinetics", applications: "Butyl rubber", features: "Sensitive to moisture" },
+            { id: 88, category: "Polymerization", name: "Anionic Polymerization", equation: "n Monomer → Polymer", mechanism: "Carbanion propagation", conditions: "Inert atm, Basic initiator", catalyst: "n-Butyllithium", energy: "Living polymerization", applications: "Block copolymers", features: "Narrow MW distribution" },
+            { id: 89, category: "Polymerization", name: "Ring-Opening Polymerization", equation: "Cyclic Monomer → Linear Polymer", mechanism: "Ring strain relief", conditions: "Catalyst dependent", catalyst: "Metal alkoxides", energy: "Driven by strain release", applications: "PLA, Nylon-6", features: "Biodegradable polymers" },
+            { id: 90, category: "Polymerization", name: "Condensation Polymerization", equation: "Monomer A + Monomer B → Polymer + Small Mol", mechanism: "Step-growth reaction", conditions: "Heat, vacuum", catalyst: "Acids/Bases", energy: "Equilibrium driven", applications: "PET, Nylon-6,6", features: "Byproduct removal needed" },
+            { id: 91, category: "Polymerization", name: "Addition Polymerization", equation: "n Alkene → Polyalkene", mechanism: "Chain-growth", conditions: "Varies", catalyst: "Varies", energy: "Exothermic", applications: "Polyolefins", features: "No byproducts" },
+            { id: 92, category: "Polymerization", name: "Ziegler-Natta Polymerization", equation: "Alkene → Stereoregular Polymer", mechanism: "Coordination insertion", conditions: "Mild T/P", catalyst: "TiCl4 / AlEt3", energy: "Efficient", applications: "HDPE, Isotactic PP", features: "High stereoregularity" },
+            { id: 93, category: "Polymerization", name: "Living Polymerization", equation: "Monomer → Polymer (Active End)", mechanism: "No termination step", conditions: "Strict purity", catalyst: "Specialized initiators", energy: "Linear growth", applications: "Precision polymers", features: "Predictable MW" },
+            { id: 94, category: "Polymerization", name: "ATRP", equation: "R-X + Monomer → Polymer-X", mechanism: "Reversible redox activation", conditions: "Cu catalyst, Ligand", catalyst: "CuBr / Bipyridine", energy: "Controlled radical", applications: "Complex architectures", features: "Functional group tolerance" },
+            { id: 95, category: "Polymerization", name: "RAFT Polymerization", equation: "Monomer + RAFT Agent → Polymer", mechanism: "Reversible chain transfer", conditions: "Radical source", catalyst: "RAFT Agent (Dithioester)", energy: "Controlled", applications: "Block copolymers", features: "Metal-free control" },
+
+             // --- Catalytic Reactions ---
+            { id: 96, category: "Catalytic", name: "Catalytic Cracking", equation: "Heavy HC → Light HC", mechanism: "Carbocation beta-scission", conditions: "500°C, Fluidized bed", catalyst: "Zeolites (ZSM-5)", energy: "Endothermic", applications: "Gasoline production", features: "Major refinery process" },
+            { id: 97, category: "Catalytic", name: "Catalytic Reforming", equation: "Alkanes → Aromatics + H2", mechanism: "Dehydrogenation, Cyclization", conditions: "500°C, High P", catalyst: "Pt / Re on Alumina", energy: "Endothermic", applications: "High octane fuel", features: "Produces Hydrogen" },
+            { id: 98, category: "Catalytic", name: "Heterogeneous Hydrogenation", equation: "Alkene + H2 → Alkane", mechanism: "Surface adsorption, H-insertion", conditions: "Pressure, Temp", catalyst: "Ni, Pd, Pt", energy: "Exothermic", applications: "Fat hardening", features: "Syn-addition" },
+            { id: 99, category: "Catalytic", name: "Asymmetric Catalysis", equation: "Prochiral Sub + Reagent → Chiral Prod", mechanism: "Chiral ligand environment", conditions: "Specific", catalyst: "Chiral Complex (BINAP)", energy: "Enantioselective", applications: "Pharma synthesis", features: "Single enantiomer" },
+            { id: 100, category: "Catalytic", name: "Photocatalytic Water Splitting", equation: "2 H2O + Light → 2 H2 + O2", mechanism: "e-/h+ pair generation", conditions: "UV/Vis Light", catalyst: "TiO2, Co-catalysts", energy: "Solar to Chemical", applications: "Green Hydrogen", features: "Artificial Photosynthesis" }
+        ];
+
+        // --- Components ---
+
+        const Icon = ({ name, className }) => {
+            const icons = {
+                flask: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M10 2v7.31"/><path d="M14 2v7.31"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg>,
+                search: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+                x: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+                info: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
+                activity: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+                zap: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+                book: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
+                settings: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            };
+            return icons[name] || null;
+        };
+
+        const Modal = ({ reaction, onClose }) => {
+            if (!reaction) return null;
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary/40 backdrop-blur-md" onClick={onClose}>
+                    <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl animate-modal flex flex-col" onClick={e => e.stopPropagation()}>
+                        
+                        {/* Modal Header */}
+                        <div className="sticky top-0 bg-white border-b border-gray-100 p-6 flex justify-between items-start z-10">
+                            <div>
+                                <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full mb-3 tracking-wide
+                                    ${reaction.category === 'Organic' ? 'bg-emerald-100 text-emerald-800' :
+                                      reaction.category === 'Inorganic' ? 'bg-blue-100 text-blue-800' :
+                                      reaction.category === 'Biochemical' ? 'bg-purple-100 text-purple-800' :
+                                      reaction.category === 'Polymerization' ? 'bg-pink-100 text-pink-800' :
+                                      'bg-orange-100 text-orange-800'
+                                    }`}>
+                                    {reaction.category}
+                                </span>
+                                <h2 className="text-3xl font-bold text-primary">{reaction.name}</h2>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors group">
+                                <Icon name="x" className="w-6 h-6 text-gray-400 group-hover:text-accent transition-colors" />
+                            </button>
+                        </div>
+
+                        {/* Modal Content - Two Column Layout */}
+                        <div className="p-8 grid lg:grid-cols-12 gap-8">
+                            
+                            {/* Left Column: Equation & Mechanism (Visual heavy) */}
+                            <div className="lg:col-span-7 space-y-8">
+                                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-inner">
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">Reaction Equation</h3>
+                                    <p className="font-mono text-xl text-primary leading-relaxed">{reaction.equation}</p>
+                                </div>
+
+                                <div>
+                                    <h3 className="flex items-center text-xl font-bold text-primary mb-4">
+                                        <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                                            <Icon name="activity" className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        Mechanism Steps
+                                    </h3>
+                                    <p className="text-gray-600 leading-relaxed text-lg">{reaction.mechanism}</p>
+                                </div>
+
+                                <div>
+                                    <h3 className="flex items-center text-xl font-bold text-primary mb-4">
+                                        <div className="p-2 bg-yellow-100 rounded-lg mr-3">
+                                            <Icon name="zap" className="w-5 h-5 text-yellow-600" />
+                                        </div>
+                                        Energy & Kinetics
+                                    </h3>
+                                    <p className="text-gray-600 leading-relaxed">{reaction.energy}</p>
+                                </div>
+                            </div>
+                            
+                            {/* Right Column: Details & Metadata */}
+                            <div className="lg:col-span-5 space-y-6">
+                                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm h-full">
+                                    <h3 className="text-lg font-bold text-primary mb-6 border-b pb-2">Reaction Details</h3>
+                                    
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h4 className="font-semibold text-gray-500 text-sm uppercase mb-2">Conditions</h4>
+                                            <p className="text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100">{reaction.conditions}</p>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="font-semibold text-gray-500 text-sm uppercase mb-2">Catalysts</h4>
+                                            <p className="text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100">{reaction.catalyst}</p>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="font-semibold text-gray-500 text-sm uppercase mb-2">Key Features</h4>
+                                            <ul className="text-gray-600 list-disc list-inside space-y-1 ml-1">
+                                                <li>{reaction.features}</li>
+                                            </ul>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="font-semibold text-gray-500 text-sm uppercase mb-2">Applications</h4>
+                                            <div className="flex items-start">
+                                                <Icon name="book" className="w-5 h-5 text-secondary mr-2 mt-0.5" />
+                                                <p className="text-gray-600">{reaction.applications}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
+                            <button onClick={onClose} className="px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors font-medium">
+                                Close Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [searchTerm, setSearchTerm] = useState("");
+            const [selectedCategory, setSelectedCategory] = useState("All");
+            const [selectedReaction, setSelectedReaction] = useState(null);
+
+            // Filter Logic
+            const filteredReactions = useMemo(() => {
+                return reactionsData.filter(reaction => {
+                    const matchesCategory = selectedCategory === "All" || reaction.category === selectedCategory;
+                    const searchLower = searchTerm.toLowerCase();
+                    const matchesSearch = 
+                        reaction.name.toLowerCase().includes(searchLower) ||
+                        reaction.equation.toLowerCase().includes(searchLower) ||
+                        reaction.applications.toLowerCase().includes(searchLower) ||
+                        reaction.features.toLowerCase().includes(searchLower);
+                    
+                    return matchesCategory && matchesSearch;
+                });
+            }, [searchTerm, selectedCategory]);
+
+            // Categories - Extracted uniquely
+            const categories = ["All", ...new Set(reactionsData.map(r => r.category))];
+
+            return (
+                <div className="min-h-screen pb-12 flex flex-col">
+                    
+                    {/* Header */}
+                    <header className="bg-primary border-b border-primary/20 sticky top-0 z-40 shadow-md">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between py-5 gap-4">
+                                <div className="flex items-center space-x-4">
+                                    <div className="p-2.5 bg-secondary rounded-xl shadow-lg shadow-black/20 transform rotate-3">
+                                        <Icon name="flask" className="w-7 h-7 text-white" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-2xl font-bold text-white tracking-tight">Chemtech</h1>
+                                        <p className="text-xs text-gray-300 font-medium uppercase tracking-widest opacity-80">Reaction Mechanisms Database</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="relative w-full md:w-96 group">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Icon name="search" className="h-5 w-5 text-gray-400 group-focus-within:text-secondary transition-colors" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        className="block w-full pl-10 pr-4 py-3 border-0 rounded-xl leading-5 bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:bg-white focus:text-gray-900 focus:ring-4 focus:ring-secondary/30 transition-all duration-300 sm:text-sm backdrop-blur-sm shadow-inner"
+                                        placeholder="Search reactions, equations..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+                        
+                        {/* Stats & Filters */}
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
+                            <div className="flex flex-wrap gap-2 bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm w-full md:w-auto">
+                                {categories.map(cat => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => setSelectedCategory(cat)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden ${
+                                            selectedCategory === cat
+                                                ? 'bg-secondary text-white shadow-md transform scale-105'
+                                                : 'text-gray-500 hover:text-primary hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="text-sm font-medium text-gray-500 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm">
+                                <span className="text-secondary font-bold">{filteredReactions.length}</span> Reactions Found
+                            </div>
+                        </div>
+
+                        {/* Grid */}
+                        {filteredReactions.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredReactions.map((reaction, index) => (
+                                    <div 
+                                        key={reaction.id}
+                                        onClick={() => setSelectedReaction(reaction)}
+                                        className="reaction-card p-6 cursor-pointer flex flex-col h-full animate-card group"
+                                        style={{ animationDelay: `${index * 0.03}s` }}
+                                    >
+                                        <div className="flex justify-between items-start mb-4">
+                                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider transition-colors
+                                                ${reaction.category === 'Organic' ? 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100' :
+                                                  reaction.category === 'Inorganic' ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-100' :
+                                                  reaction.category === 'Biochemical' ? 'bg-purple-50 text-purple-600 group-hover:bg-purple-100' :
+                                                  reaction.category === 'Polymerization' ? 'bg-pink-50 text-pink-600 group-hover:bg-pink-100' :
+                                                  'bg-orange-50 text-orange-600 group-hover:bg-orange-100'
+                                                }`}>
+                                                {reaction.category}
+                                            </span>
+                                            <Icon name="info" className="w-5 h-5 text-gray-300 group-hover:text-accent transition-colors duration-300" />
+                                        </div>
+                                        
+                                        <h3 className="text-lg font-bold text-primary mb-3 line-clamp-2 group-hover:text-secondary transition-colors duration-300">{reaction.name}</h3>
+                                        
+                                        <div className="bg-slate-50 p-3 rounded-lg mb-5 border border-slate-100 flex-grow group-hover:border-slate-200 transition-colors">
+                                            <p className="font-mono text-xs text-slate-600 break-words leading-relaxed">{reaction.equation}</p>
+                                        </div>
+                                        
+                                        <div className="pt-4 border-t border-gray-50 flex justify-between items-center mt-auto">
+                                            <span className="text-xs font-semibold text-gray-400">View Details</span>
+                                            <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-accent group-hover:text-white transition-all duration-300">
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-24 bg-white rounded-2xl border border-dashed border-gray-300 shadow-sm">
+                                <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <Icon name="search" className="w-10 h-10 text-gray-300" />
+                                </div>
+                                <h3 className="text-xl font-bold text-primary mb-2">No reactions found</h3>
+                                <p className="text-gray-500 max-w-sm mx-auto">We couldn't find any reactions matching "{searchTerm}". Try adjusting your search keywords.</p>
+                                <button onClick={() => {setSearchTerm(""); setSelectedCategory("All");}} className="mt-6 px-6 py-2 bg-secondary text-white rounded-lg hover:bg-opacity-90 transition-colors shadow-lg shadow-secondary/30">
+                                    Reset Filters
+                                </button>
+                            </div>
+                        )}
+                    </main>
+                    
+                    {/* Footer */}
+                    <footer className="bg-white border-t border-gray-200 mt-auto py-8">
+                        <div className="max-w-7xl mx-auto px-4 text-center text-gray-400 text-sm">
+                            <p>© 2024 Chemtech Database. Designed for science professionals.</p>
+                        </div>
+                    </footer>
+
+                    {/* Modal */}
+                    {selectedReaction && (
+                        <Modal reaction={selectedReaction} onClose={() => setSelectedReaction(null)} />
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
