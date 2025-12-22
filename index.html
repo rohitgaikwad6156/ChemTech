@@ -115,6 +115,13 @@ nav a:hover { color: #ffe600; }
   justify-content: center;
   font-size: 40px;
   color: #6c757d;
+  overflow: hidden;
+}
+.author-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 .author-name {
   font-size: 1.4rem;
@@ -163,7 +170,6 @@ nav a:hover { color: #ffe600; }
   <a href="database.html">Chemical Database</a>
   <a href="name-reactions.html">Name Reactions</a>
   <a href="Reaction-Mechanism.html">reaction mechanism</a>
-  <a href="voice-assistant.html">voice-assistant</a>
 </nav>
 
 <section class="hero">
@@ -175,35 +181,45 @@ nav a:hover { color: #ffe600; }
   <h2>Meet Our Team</h2>
   <div class="team-grid">
     <div class="author-card">
-      <div class="author-photo">👩‍⚕️</div>
+      <div class="author-photo">
+        <img src="images/dr-priya-joshi.jpg" alt="Dr. Priya Joshi" onerror="this.style.display='none'; this.parentElement.innerHTML='👩‍⚕️'">
+      </div>
       <h3 class="author-name">Dr. Priya Joshi</h3>
       <p class="author-role">Chemistry Professor & Project Lead</p>
       <p class="author-bio">Expert in organic chemistry with extensive research experience in chemical education and interactive learning methodologies.</p>
     </div>
     
     <div class="author-card">
-      <div class="author-photo">👨‍💻</div>
+      <div class="author-photo">
+        <img src="images/krushna-surase.jpg" alt="Krushna Surase" onerror="this.style.display='none'; this.parentElement.innerHTML='👨‍💻'">
+      </div>
       <h3 class="author-name">Krushna Surase</h3>
       <p class="author-role">Full-Stack Developer</p>
       <p class="author-bio">Specializes in web technologies and database management, bringing technical expertise to create robust chemistry applications.</p>
     </div>
     
     <div class="author-card">
-      <div class="author-photo">👩‍🔬</div>
+      <div class="author-photo">
+        <img src="images/nakshatra-lalwani.jpg" alt="Nakshatra Lalwani" onerror="this.style.display='none'; this.parentElement.innerHTML='👨‍💻'">
+      </div>
       <h3 class="author-name">Nakshatra Lalwani</h3>
       <p class="author-role">Research Assistant</p>
       <p class="author-bio">Dedicated to chemical research and data curation, ensuring accuracy and comprehensiveness in our chemical databases.</p>
     </div>
     
     <div class="author-card">
-      <div class="author-photo">👨‍🔬</div>
+      <div class="author-photo">
+        <img src="images/shravan-ganjewar.jpg" alt="Shravan Ganjewar" onerror="this.style.display='none'; this.parentElement.innerHTML='👨‍💻'">
+      </div>
       <h3 class="author-name">Shravan Ganjewar</h3>
       <p class="author-role">UI/UX Designer</p>
       <p class="author-bio">Focuses on creating intuitive and engaging user interfaces for complex scientific data visualization.</p>
     </div>
     
     <div class="author-card">
-      <div class="author-photo">👤</div>
+      <div class="author-photo">
+        <img src="images/rohit-gaikwad.jpg" alt="Rohit Gaikwad" onerror="this.style.display='none'; this.parentElement.innerHTML='👨‍💻'">
+      </div>
       <h3 class="author-name">Rohit Gaikwad</h3>
       <p class="author-role">Project Coordinator</p>
       <p class="author-bio">Chemistry enthusiast and developer passionate about creating interactive educational tools for chemical education and research.</p>
