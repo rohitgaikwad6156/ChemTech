@@ -2,181 +2,115 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ChemTech Login</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChemTech – Advanced Chemistry Project</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
 <style>
-/* ===== Reset ===== */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-/* ===== Background Animated Particles ===== */
+/* ==== Global Styles ==== */
 body {
-  height: 100vh;
-  background: radial-gradient(circle at top, #08306b, #021633);
-  overflow: hidden;
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background: #f4f8fb;
+  color: #111;
+  transition: background 0.3s, color 0.3s;
+}
+header, footer { text-align: center; padding: 20px; }
+a { text-decoration: none; color: inherit; }
+nav { display: flex; justify-content: center; gap: 25px; background: #007bff; padding: 15px; }
+nav a { color: white; font-weight: 500; transition: color 0.3s; }
+nav a:hover { color: #ffe600; }
+
+/* Dark Mode */
+.dark-mode { background: #081421; color: #fff; }
+.dark-mode nav { background: #0b2a44; }
+.dark-mode nav a:hover { color: #00ffea; }
+
+/* Hero Section */
+.hero {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  font-family: "Segoe UI", sans-serif;
-}
-
-/* Floating particles */
-.particle {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background: rgba(0,255,255,0.8);
-  border-radius: 50%;
-  box-shadow: 0 0 8px cyan;
-  animation: floatUp linear infinite;
-}
-
-@keyframes floatUp {
-  0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
-  20% { opacity: 1; }
-  100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
-}
-
-/* ===== Glassmorphic Login Box ===== */
-.login-card {
-  width: 350px;
-  padding: 30px;
-  border-radius: 20px;
-  backdrop-filter: blur(12px);
-  background: rgba(255,255,255,0.06);
-  border: 2px solid rgba(0,255,255,0.2);
-  box-shadow: 0 0 15px rgba(0,255,255,0.2);
+  justify-content: center;
+  height: 70vh;
+  background: linear-gradient(135deg,#007bff,#00c6ff);
+  color: white;
   text-align: center;
-  animation: fadeIn 1s ease-in-out;
+  animation: fadeIn 1.5s ease-in;
+}
+.hero h1 { font-size: 3rem; margin: 0; animation: slideIn 1.5s ease-out; }
+.hero p { font-size: 1.2rem; max-width: 700px; margin-top: 15px; animation: fadeIn 2s ease-in; }
+
+/* Hero Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideIn { from { transform: translateY(-50px); opacity:0;} to { transform: translateY(0); opacity:1;} }
+
+/* Sections */
+.section-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 25px;
+  padding: 50px 20px;
+}
+.card {
+  background: #fff;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 25px rgba(0,0,0,0.2);
+}
+.card h2 { margin-bottom: 15px; color:#007bff; }
+.card p { font-size: 0.95rem; line-height: 1.4; color:#333; }
+.card img { max-width: 80px; margin-bottom: 15px; }
+
+/* Footer */
+footer { margin-top: 50px; padding: 20px; background: #007bff; color: white; }
+
+/* Dark mode button */
+.dark-btn {
+  position: fixed; right: 20px; top: 20px;
+  padding: 10px 15px; background: black; color:white;
+  border:none; cursor:pointer; border-radius:8px; z-index: 1000;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(30px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Title */
-.login-card h1 {
-  color: #8befff;
-  letter-spacing: 2px;
-  margin-bottom: 20px;
-  text-shadow: 0 0 10px cyan;
-}
-
-/* Inputs */
-.input-box {
-  margin: 15px 0;
-  width: 100%;
-}
-
-.input-box input {
-  width: 100%;
-  padding: 12px;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid cyan;
-  border-radius: 8px;
-  outline: none;
-  color: cyan;
-  font-size: 16px;
-  box-shadow: 0 0 10px rgba(0,255,255,0.2);
-  transition: 0.3s;
-}
-
-.input-box input:focus {
-  box-shadow: 0 0 20px cyan;
-}
-
-/* Login Button */
-button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 15px;
-  background: cyan;
-  color: #003050;
-  border: none;
-  border-radius: 8px;
-  font-size: 18px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: 0.3s;
-  box-shadow: 0 0 15px cyan;
-}
-
-button:hover {
-  background: #00ffff;
-  box-shadow: 0 0 25px cyan;
-}
-
-/* Wrong password shake */
-.shake {
-  animation: shakeAnim 0.4s;
-}
-
-@keyframes shakeAnim {
-  0%,100% { transform: translateX(0); }
-  25%     { transform: translateX(-12px); }
-  50%     { transform: translateX(12px); }
-  75%     { transform: translateX(-8px); }
-}
-
-/* Footnote */
-.footer {
-  margin-top: 15px;
-  color: #88d6ff;
-  font-size: 14px;
-  text-shadow: 0 0 5px cyan;
-}
+/* Responsive */
+@media(max-width:768px){ .hero h1{font-size:2.2rem;} .hero p{font-size:1rem;} }
 </style>
 </head>
-
 <body>
 
-<!-- Background particles generated by JS -->
-<div id="particles"></div>
+<button class="dark-btn" onclick="toggleDark()">🌙</button>
 
-<!-- LOGIN CARD -->
-<div class="login-card" id="loginBox">
-  <h1>ChemTech Login</h1>
+<header>
+  <h1>ChemTech</h1>
+</header>
 
-  <div class="input-box">
-    <input id="username" type="text" placeholder="Username">
-  </div>
+<nav>
+  <a href="index.html">Home</a>
+  <a href="database.html">Chemical Database</a>
+  <a href="name-reactions.html">Name Reactions</a>
+  <a href="Reaction-Mechanism.html">reaction mechanism</a>
+  <a href="voice-assistant.html">voice-assistant</a>
+</nav>
 
-  <div class="input-box">
-    <input id="password" type="password" placeholder="Password">
-  </div>
-
-  <button onclick="login()">Login</button>
-
-  <div class="footer">Authorized Access Only</div>
-</div>
+<section class="hero">
+  <h1>Welcome to ChemTech</h1>
+  <p>An Advanced Chemistry Project: Explore chemical databases, visualize molecules in 3D, learn reaction mechanisms, and discover important name reactions with interactive content.</p>
+</section>
 
 
+<footer>
+  Author: Rohit Gaikwad | References: PubChem, NIST, Wikipedia, Royal Society of Chemistry
+</footer>
 
 <script>
-// ======== Floating Particle Generator ========
-const container = document.getElementById("particles");
-for (let i = 0; i < 40; i++) {
-  const p = document.createElement("div");
-  p.classList.add("particle");
-  p.style.left = Math.random()*100 + "vw";
-  p.style.animationDuration = (4 + Math.random()*6) + "s";
-  p.style.opacity = Math.random();
-  container.appendChild(p);
-}
-
-// ======== Login Logic ========
-function login() {
-  let user = document.getElementById("username").value.trim();
-  let pass = document.getElementById("password").value.trim();
-
-  if (user === "admin" && pass === "chemtech") {
-      window.location.href = "home.html";
-  } else {
-      let card = document.getElementById("loginBox");
-      card.classList.add("shake");
-      setTimeout(()=> card.classList.remove("shake"), 500);
-  }
+function toggleDark() {
+  document.body.classList.toggle('dark-mode');
 }
 </script>
 
